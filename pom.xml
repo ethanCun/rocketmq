@@ -12,6 +12,10 @@
         <module>rocketmq01</module>
     </modules>
 
+    <properties>
+
+    </properties>
+
     <dependencyManagement>
 
         <dependencies>

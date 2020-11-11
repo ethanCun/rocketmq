@@ -67,7 +67,7 @@
         cd bin目录： sh ./mqshutdown namesrv
 
     2. 关闭Broker:
-        cd bin目录： sh ./myshutdown broker
+        cd bin目录： sh ./mqshutdown broker
 
 
 查看是否启动： jps
@@ -273,3 +273,114 @@ mqadmin管理集群：
     2. 修改子模块rocketmq-console的namesrvAddr: rocketmq.config.namesrvAddr=xxx
     3. 打包，在linux上启动：
         mvn clean package -Dmaven.test.skip=true //跳过测试阶段
+
+
+
+
+发送消息：
+
+    导入依赖：
+                <!--
+                    RocketMQ消息客户端
+                -->
+                <dependency>
+                    <groupId>org.apache.rocketmq</groupId>
+                    <artifactId>rocketmq-client</artifactId>
+                    <version>4.4.0</version>
+                </dependency>
+
+
+    消息发送者步骤：
+
+        1. 创建消息生产者， 并绑定组名；
+        2. 指定nameserver地址；
+        3. 启动producer
+        4. 创建消息对象，指定Topic、tag和消息体
+        5. 发送消息
+        6. 关闭Producer
+
+
+    消息消费者步骤：
+        1. 创建消费者Consumer，指定消费者组名；
+        2. 指定nameserver地址；
+        3. 订阅主题topic和tag；
+        4. 设置回调函数，处理消息；
+        5. 启动消费者consumer；
+
+
+    注意： Topic Tag 名称不允许有空格
+
+
+
+发送消息：
+
+    //消息主题 消息tag  消息内容
+     Message message = new Message("base", "tag1", ("hello czy"+i).getBytes());
+
+    //同步发送
+    SendResult sendResult = producer.send(message);
+
+    //异步发送
+    producer.send(message, new SendCallback() {
+
+           public void onSuccess(SendResult sendResult) {
+
+               System.out.println("发送成功： " + sendResult);
+           }
+
+           public void onException(Throwable e) {
+
+                  System.out.println("发送失败: " + e);
+           }
+    });
+
+    //单向发送消息：
+        不关心返回结果的发送方式， 比如发送日志：
+       producer.sendOneway(message);
+
+
+
+消费消息：
+
+    1.  Broker推送的消费方式， 获取Consumer拉的消费方式：
+
+        //创建一个消费者， 指定组， Push是指Broker向Consumer推送消息
+                DefaultMQPushConsumer defaultMQPushConsumer =
+                        new DefaultMQPushConsumer("sync-group1");
+
+                //关联nameserver
+                defaultMQPushConsumer.setNamesrvAddr("localhost:9876");
+
+                //订阅topic和tag
+                defaultMQPushConsumer.subscribe("base", "tag1");
+
+                //回调函数， 消息监听器
+                defaultMQPushConsumer.registerMessageListener(new MessageListenerConcurrently() {
+
+                    public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs,
+                                                                    ConsumeConcurrentlyContext context) {
+
+                        msgs.forEach(msg -> {
+
+                            System.out.println(new String(msg.getBody()));
+                        });
+
+                        //返回消息消费的结果
+                        return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+                    }
+                });
+
+                //启动消费者
+                defaultMQPushConsumer.start();
+
+
+     2. 多个消费者情况下的广播模式和负载均衡模式， 默认是负载均衡模式：
+
+        广播模式： 每一个消费者都消费所有消息
+        负载均衡模式： 所有消费者加起来合理地消费所有消息
+
+        //设置消费模式 默认是负载均衡模式：CLUSTERING
+        //defaultMQPushConsumer.setMessageModel(MessageModel.CLUSTERING);
+
+
+
