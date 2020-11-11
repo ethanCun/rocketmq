@@ -1,0 +1,275 @@
+
+消息队列mq: message queue
+
+    系统1 发送消息到消息队列 -》   消息队列   -》 系统2 监听消息队列
+
+优点：
+    1. 服务之间的解耦， 传统的rpc rest方式系统2挂了就没法继续消费消息，
+    在mq下，系统2挂了，可以等到下次系统2重启了继续消费消息队列的消息；
+
+    2. 将微服之间同步的调用改为异步的调用；
+
+    3. 流量消峰： 在已知请求量大的某个时间段，可以将请求放到mq，消费服务按照自己能够承担的
+        qps去消费，如果不采用mq，消费服务的qps就得按照最大流量值的qps来使用服务器，因此
+        使用mq能够降低服务器成本；
+
+    4. 数据分发： 将mq中的消息分发到不能的子服务， 这种情况同步调用就很难办到，在mq中谁
+        想要消费，谁就去mq中消费就行了；
+
+
+缺点：
+    1. 系统之间的可用性相对变差， 如果mq挂了，消息就没法消费；
+    2. 系统复杂度提高:
+        比如原来的同步调用变成了异步调用, 另外比如消息消费的顺序性也更难处理，
+        多个服务消息消费的一致性也更难保证；
+
+
+
+常见的mq：
+    RocketMQ, RabbitMQ, Kafka, ActiveMQ
+
+              编写语言    单击吞吐量   时效性
+    rabbitmq: erlang编写，万级， 性能相对高一些，us级 主从架构
+    RocketMQ: java编写 10万级 ms级 分布式架构
+    ActiveMQ: java编写 万级 ms级 主从架构
+    Kafka: scala编写，主要用于大数据 10万级 ms级 分布式架构
+
+
+
+安装：
+    http://rocketmq.apache.org/dowloading/releases/
+
+    4.4.0
+
+    因为RocketMQ基于Java，所以需要先安装jdk
+
+
+启动：
+    1. 先启动NameServer:
+        cd bin目录：nohup sh ./mqnamesrv &
+       启动日志产生目录： ~/logs/rocketmqlogs/namesrv.log
+
+    2. 启动broker:
+        端口号默认是9876
+        cd bin目录： nohup sh ./mqbroker localhost:9876 &
+       启动日志产生目录：  ~/logs/rocketmqlogs/broker.log
+
+    3. 修改broker在jvm中的内存大小(如果硬件内存够的话，可以不用修改)：
+        vim ./runbroker.sh
+        vim ./runserver.sh
+
+        修改JVM configuration:
+        # JAVA_OPT="${JAVA_OPT} -server -Xms256m -Xmx256m -Xmn128m -XX:MetaspaceSize=128m -XX:MaxMetaspaceSize=320m"
+
+
+关闭：
+    1. 关闭NameServer:
+        cd bin目录： sh ./mqshutdown namesrv
+
+    2. 关闭Broker:
+        cd bin目录： sh ./myshutdown broker
+
+
+查看是否启动： jps
+
+
+
+测试消息发送和消息接收：
+
+    1. 发送消息：
+        1.1. 设置环境变量：
+            export NAMESRV_ADDR=localhost:9876
+        1.2. 使用安装包的Demo发送消息：
+           cd到bin目录： sh tools.sh org.apache.rocketmq.example.quickstart.Producer
+
+
+    2. 接收消息：
+        2.1. 设置环境变量：
+            export NAMESRV_ADDR=localhost:9876
+        2.2. 接收消息：
+            cd到bin目录： sh tools.sh org.apache.rocketmq.exame.quickstart.Consumer
+
+
+    可以看到： 消息发送方后，立即关闭， 消息接收端不会关闭，一直处于接收状态；
+
+
+
+
+RocketMQ的角色：
+
+    NameServer： 管理Broker, 负责消息分配到哪个Broker；
+    Broker： 主动上报自己的信息到NameServer， 存储消息；
+    Producer: 消息生产者， 发送消息前询问NameServer分配到哪个Broker；
+    Consumer: 消息接收者， 接受前询问NameServer从哪个Broker接收消息；
+    Topic: 区分消息的种类，一个发送者可以发送一个或者多个Topic，一个接受者可以接受一个或者
+        多个Topic;
+    Message Queue: 相当于是Topic的分区，用于并行发送和接受消息；
+
+    Producer和NameServer，Broker之间都保证有心跳包， 确报对应种类Topic的消息
+    能够发送到对应的Broker；
+    同样， Consumer和NameServer，Broker之间也有心跳包， Consumer不仅会从Broker
+    拿消息消费， Broker也会主动推送消息到Consumer， 所有持有心跳包；
+
+
+
+
+Rocket集群:
+    NameServer集群是无状态的， 也就是每个节点数据是一直的， 只要启动多个就行了，  节点之间没有消息同步；
+    Producer集群也是无状态的， 只要启动多个就行了， 节点之间没有消息同步；
+    Consumer集群也是无状态的，  只要启动多个就行了， 节点之间没有消息同步；
+    Broker集群有主从节点:
+        1. 通过Broker name区分多个Broker是否在同一个组；主从节点需要进行数据同步；
+        2. 通过Broker id区分主节点和子节点， 0代表主节点，非0代表子节点；
+
+
+
+RocketMQ Broker集群种类：
+
+    1. 单master模式：
+        这种方式不安全，主节点挂了mq就挂了；
+
+
+    2. 多master模式：
+
+        优点： 配置简单， 数据丢失较少；
+        缺点： 怠机的master节点，消息丢失；
+
+    3. 多master多slave异步模式：
+
+        每个master配置一个slave，有多对master-slave， 主备消息同步有少许延时
+
+        优点： 消失丢失较少，Consumer可以从子节点获取消息消费；
+        缺点： 主备消息同步期间的数据有可能丢失；
+
+    4. 多master多slave同步模式：
+
+        每个master配置一个slave，有多对master-slave， 主备消息同步双写，只有
+        主备双写成功才向应用返回成功， 消息安全性要求高可以使用同步模式；
+
+        优点： 消息无延迟， 数据可用性高；
+        缺点： 同步双写影响性能；
+
+
+
+双主双从集群：
+    1. 工作流程：
+        1.1. 启动NameServer，等待Producer、Broker、Consumer连接上来；
+        1.2. 启动Broker， Broker向NameServer发送心跳包， 心跳包中包含了
+            Broker对应的Topic信息；
+        1.3. 收发消息前，先创建Topic，创建Topic时需要指定该Topic使用在
+            哪些Broker上面， 也可以在消息发送时创建Broker；
+        1.4. Producer发送消息前，先与NameServer建立长连接， 根据发送的Topic
+            找到Broker发送消息；
+        1.5. Consumer和Producer类似，先与NameServer建立长连接， 根据Topic
+            找到Broker消费消息；
+
+
+    2. 集群搭建：
+
+        2.1. 准备两台linux服务器:
+                需要注意的是将同一组的Broker(即brokerName相同)主从节点放到不同的服务器上，这样
+                在双主双从同步集群配置环境下，只有两台服务器同时挂了，消息才会丢失；
+
+                比如： 服务器A放Broker-a和Broker-b-s, 服务器B放Broker-b和
+                    Broker-a-s
+
+        2.2. 配置域名： vim /etc/hosts
+                重启网卡： systemctl restart network
+        2.3. 配置防火墙， 开放相关端口： NameServer的9876以及Broker集群的端口;
+                配置RabbitMQ环境变量： vim ~/etc/profile
+        2.4. RocketMQ -> config:
+            2m-2s-async: 代表双主双从异步模式集群配置
+            2m-2s-sync: 代表双主双从同步模式集群配置
+            2m-noslave: 代表双主模式集群配置
+
+           2m-2s-sync包括：
+            broker-a-s.properties
+            broker-a.properties
+            broker-b-s.properties
+            broker-b.properties
+
+
+            # 当前集群名称
+            brokerClusterName=DefaultCluster
+
+            # 当前broker名称
+            brokerName=broker-a
+
+            # 当前broker id 0:表示主节点 1：表示子节点
+            brokerId=0
+
+            # 凌晨4点的时候删除不常用的消息
+            deleteWhen=04
+
+            # 文件保留时间 默认48小时
+            fileReservedTime=48
+
+            # broker角色： 当前是双从双写的主节点  主节点：SYNC_MASTER  从节点：SLAVE
+            brokerRole=SYNC_MASTER
+
+            # 异步刷盘机制
+            flushDiskType=ASYNC_FLUSH
+
+            #NameServer地址, 用分号分割
+            namesrvAddr=49.235.231.176:9876;49.235.231.177:9876
+
+            #默认创建的队列数
+            defaultTopicQueueNums=4
+
+            # 是否允许Broker自动创建Topic, 建议线下开启， 线上关闭
+            autoCreateTopicEnable=true
+
+            # 是否允许Broker自动创建订阅组, 建议线下开启， 线上关闭
+            autoCreateSubscriptionGroup=true
+
+            # Broker对外服务的监听端口， 默认10911
+            listenPort=10911
+
+            # 消息存储路径
+            storePathRootDir=/usr/local/rocketmq/store
+
+            # commitLog存储路径
+            storePathCommitLog=/usr/local/rocketmq/store/commitLog
+
+            # 消费队列存储路径
+            storePathConsumeQueue=/usr/local/rocketmq/store/consumequeue
+
+            # 消息索引存储路径
+            storePathIndex=/usr/local/rocketmq/store/index
+
+            # checkpoint文件存储路径
+            storeCheckpoint=/usr/local/rocketmq/store/checkpoint
+
+            # 限制的消息大小
+            maxMessageSize=65536
+
+        2.5. 启动Broker集群需要指定不同的配置文件：
+            nohup sh mqbroker -c /usr/local/rocketmq/2m-2s-sync/broker-a.properties &
+            nohup sh mqbroker -c /usr/local/rocketmq/2m-2s-sync/broker-a-s.properties &
+            nohup sh mqbroker -c /usr/local/rocketmq/2m-2s-sync/broker-b.properties &
+            nohup sh mqbroker -c /usr/local/rocketmq/2m-2s-sync/broker-b-s.properties &
+
+
+
+
+mqadmin管理集群：
+
+    1. Topic相关：
+        更新
+        updateTopic -b: topic关联broker
+        updateTopic -c: topic关联集群
+        删除：
+        deleteTopic
+        列表：
+        topicList
+    2. 集群相关：
+        clusterList
+    3. broker相关：
+        等等...
+
+
+使用rocketmq-console监控平台：
+    1. github下载: https://github.com/875279177/incubator-rocketmq-externals
+    2. 修改子模块rocketmq-console的namesrvAddr: rocketmq.config.namesrvAddr=xxx
+    3. 打包，在linux上启动：
+        mvn clean package -Dmaven.test.skip=true //跳过测试阶段
