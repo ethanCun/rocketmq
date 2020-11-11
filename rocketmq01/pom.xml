@@ -38,6 +38,11 @@
             <version>2.1.6.RELEASE</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+
         <!--
             RocketMQ消息客户端
         -->

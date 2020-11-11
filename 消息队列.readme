@@ -384,3 +384,109 @@ mqadmin管理集群：
 
 
 
+消息有序消费：比如提交订单， 付款， 取消订单必须有序进行
+
+    单个MQ队列是有顺序性的，但是Broker里面并不止一个队列， 多个队列的情况下就不能保证
+    消息的消费是有序的了；
+    消费者去Broker的多个队列去消费时，是采用的多线程方式消费， 因此多个队列存在先后顺序；
+
+    全局消息顺序： 比如有多个人做多个动作， 要求一个人做完一套动作，第二个人再做；
+    局部消息顺序： 只需要保证某个人多个动作先后顺序，不要求保证人与人之间的顺序性；
+
+    我们需要做的是保证局部消息顺序：
+         将多个动作放到一个队列里面， 比如通过订单id关联提交订单，付款，取消订单等，
+            将这些消息放到同一个队列中；
+
+
+
+延时消息：
+
+    现在RockerMQ并不支持任意时间的延迟，RocketMQ延时限定为下面的时间段：
+        1s 5s 10s 10s 1m ---- 10m 20m 30m 1h 2h
+        从1s到2h对应着1-18个等级
+
+    message.setDelayTimeLevel(3);
+
+
+
+批量发送消息：
+    比如一次发送十条, 适合每次发送不超过4m的消息
+    超过4m的消息批量发送需要进行消息分割;
+
+
+
+消息过滤：
+    1. tag过滤：根据Message的TAG；
+    2. sql过滤：RocketMQ支持sql基本语法的过滤；
+
+    使用sql过滤需要在conf下编辑broker.conf, 添加：
+    否则报错：
+         DESC: The broker does not support consumer to filter message by SQL92
+         # 允许使用sql过滤
+         enablePropertyFilter=true
+
+    修改之后重启nameserver：nohup sh mqnamesrv &
+        重启broker:
+        nohup sh mqbroker -n localhost:9876 -c ../conf/broker.conf &
+
+
+
+
+事务消息：
+    对于发送者来说， 发送的消息是带有事务的，可以对消息队列中的消息进行提交或者回滚；
+
+    事务消息分为两个流程：
+        1. 正常事务消息的发送及提交；
+        2. 事务消息的补偿流程；
+
+    事务消息共有3个状态： 提交状态、回滚状态、中间状态；
+
+    提交状态： 允许消费者消费这个消息
+    回滚状态： 代表该消息不允许被消费，将会被删除
+    中间状态： 代表需要检查消息队列来确定状态
+
+
+    流程：
+        1. 发送正常消息：half msg：
+            TransactionSendResult sendResult =
+                                producer.sendMessageInTransaction(message, null);
+
+        2. 发生后触发消息事务监听回调：
+                    //添加消息事务监听器
+                    producer.setTransactionListener(new TransactionListener() {
+
+                        //执行事务
+                        @Override
+                        public LocalTransactionState executeLocalTransaction(Message msg, Object arg) {
+
+                            System.out.println("executeLocalTransaction");
+
+                            //发送消息后会走这个回调
+                            if ("tag1".equals(msg.getTags())){
+                                //提交 对应tag的消息可以被消费
+                                return LocalTransactionState.COMMIT_MESSAGE;
+                            }else if("tag2".equals(msg.getTags())){
+                                //回滚， 该消息会被删除
+                                return LocalTransactionState.ROLLBACK_MESSAGE;
+                            }else if("tag3".equals(msg.getTags())){
+                                //不做处理，触发消息生产者的回查
+                                return LocalTransactionState.UNKNOW;
+                            }
+
+                            return LocalTransactionState.UNKNOW;
+                        }
+
+                        // 消息回查
+                        @Override
+                        public LocalTransactionState checkLocalTransaction(MessageExt msg) {
+
+                            System.out.println("checkLocalTransaction");
+
+                            //回查之后, 设置重新提交 因此tag3对应的消息也被消费了
+                            return LocalTransactionState.COMMIT_MESSAGE;
+                        }
+                    });
+
+
+
+
