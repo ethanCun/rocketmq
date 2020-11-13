@@ -1,0 +1,8 @@
+
+server:
+  port: 8002
+
+# rocketmq
+rocketmq:
+  name-server: localhost:9876
+

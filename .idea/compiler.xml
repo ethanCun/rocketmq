@@ -6,9 +6,17 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="dubbo-admin" />
         <module name="rocketmq01" />
+        <module name="springboot-dubbo-consumer" />
+        <module name="springbootdubbointerface" />
+        <module name="springbootdubboprovider" />
+        <module name="springbootrocketmqconsumer" />
+        <module name="springbootrocketmqproducer" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel target="8" />
+    <bytecodeTargetLevel target="8">
+      <module name="rockermq02订单案例" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>

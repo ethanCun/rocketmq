@@ -1,0 +1,10 @@
+server:
+  port: 8001
+
+# rocketmq
+rocketmq:
+  #rocketmq nameserver
+  name-server: localhost:9876
+  producer:
+    # 消息生产者组名
+    group: springboot-rocketmq-group

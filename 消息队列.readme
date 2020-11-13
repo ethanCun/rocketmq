@@ -446,6 +446,10 @@ mqadmin管理集群：
     中间状态： 代表需要检查消息队列来确定状态
 
 
+    事务消息不支持批量消息和延迟消息，为了避免单个消息被检查多次导致消息队列堆积，
+    默认将单个消息的检查次数限制为15次，这个次数可以在Broker.cnf中设置
+    transactionCheckMax来设置检查次数；
+
     流程：
         1. 发送正常消息：half msg：
             TransactionSendResult sendResult =
