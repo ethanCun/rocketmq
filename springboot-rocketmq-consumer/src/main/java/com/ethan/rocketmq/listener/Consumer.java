@@ -3,7 +3,6 @@ package com.ethan.rocketmq.listener;
 import org.apache.rocketmq.spring.annotation.ConsumeMode;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 //消息消费监听器 需要注册到spring

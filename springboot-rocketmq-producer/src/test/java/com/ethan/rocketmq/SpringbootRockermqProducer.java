@@ -19,5 +19,6 @@ public class SpringbootRockermqProducer {
 
         this.rocketMQTemplate.convertAndSend("springboot-rocketmq-topic",
                 "springboot集成rocketmq发送消息");
+
     }
 }

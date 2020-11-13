@@ -8,15 +8,28 @@
         <outputRelativeToContentRoot value="true" />
         <module name="dubbo-admin" />
         <module name="rocketmq01" />
+        <module name="shopapi" />
+        <module name="shopcommon" />
+        <module name="shopcouponservice" />
+        <module name="shopgoodsservice" />
+        <module name="shoporderservice" />
+        <module name="shoporderweb" />
+        <module name="shoppayservice" />
+        <module name="shoppayweb" />
+        <module name="shoppojo" />
         <module name="springboot-dubbo-consumer" />
         <module name="springbootdubbointerface" />
         <module name="springbootdubboprovider" />
         <module name="springbootrocketmqconsumer" />
+        <module name="springbootrocketmqorder" />
         <module name="springbootrocketmqproducer" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="8">
       <module name="rockermq02订单案例" target="1.8" />
+      <module name="shopparent" target="1.5" />
+      <module name="shopuserservice" target="1.5" />
+      <module name="springbootrocketmqorder" target="1.5" />
     </bytecodeTargetLevel>
   </component>
 </project>

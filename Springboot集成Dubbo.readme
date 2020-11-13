@@ -1,0 +1,179 @@
+
+Dubbo依赖：
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.0.1.RELEASE</version>
+    </parent>
+
+ <dependencies>
+
+        <!--
+            api依赖
+        -->
+        <dependency>
+            <groupId>com.ethan</groupId>
+            <artifactId>springboot-dubbo-interface</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <!--
+            Dubbo
+        -->
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo-spring-boot-starter</artifactId>
+            <version>2.7.3</version>
+        </dependency>
+
+        <!--
+            zookeeper
+        -->
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>3.4.10</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- 引入zookeeper依赖组件 -->
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-framework</artifactId>
+            <version>2.12.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-recipes</artifactId>
+            <version>2.12.0</version>
+        </dependency>
+
+        <!--
+            zkclient
+        -->
+        <dependency>
+            <groupId>com.github.sgroschupf</groupId>
+            <artifactId>zkclient</artifactId>
+            <version>0.1</version>
+        </dependency>
+
+        <!--
+            spring-boot-starter
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+            <!--
+                排除日志
+            -->
+            <exclusions>
+                <exclusion>
+                    <artifactId>log4j-to-slf4j</artifactId>
+                    <groupId>org.apache.logging.log4j</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+    </dependencies>
+
+
+Dubbo服务提供者：
+
+    public interface UserService {
+
+        String sayHello(String name);
+    }
+
+    @Component
+    //服务提供方
+    @Service(interfaceClass = UserService.class)
+    public class UserServiceImp implements UserService {
+
+        @Override
+        public String sayHello(String name) {
+            return name;
+        }
+    }
+
+
+#application.properties:
+
+    server.port=7001
+
+    #dubbo
+    spring.application.name=springboot-dubbo-provider
+
+
+    # 服务应用名称
+    dubbo.application.name=provider-server
+    dubbo.application.id=provider-server-id
+    # 注册中心地址 集群用分号连接
+    dubbo.registry.address=zookeeper://localhost:2181
+    # 那些服务需要被注册
+    dubbo.scan.base-packages=com.ethan.dubbo.service
+
+    # 协议名称
+    dubbo.protocol.name=dubbo
+    # dubbo端口 默认20880
+    dubbo.protocol.port=20880
+
+
+#Application:
+
+    @SpringBootApplication
+    @EnableDubboConfig
+    public class SpringbootDubboApplication {
+
+        public static void main(String[] args) {
+
+            SpringApplication.run(SpringbootDubboApplication.class, args);
+        }
+    }
+
+
+#Dubbo服务消费者：
+
+   依赖同提供者多个spring-boot-starter-web
+
+#Application:
+    @SpringBootApplication
+    @EnableDubboConfig
+    public class SpringbootDubboConsumerApplication {
+
+        public static void main(String[] args) {
+
+            SpringApplication.run(SpringbootDubboConsumerApplication.class, args);
+        }
+    }
+
+
+#使用@Reference调用服务：
+
+    import org.apache.dubbo.config.annotation.Reference;
+
+    @RestController
+    public class UserController {
+
+        //调用远程服务
+        @Reference
+        private UserService userService;
+
+        @RequestMapping(value = "/hi")
+        public String userServiceConsume(){
+
+            System.out.println(this.userService.sayHello("hi!"));
+
+            return "hi";
+        }
+    }

@@ -9,6 +9,16 @@
     <file url="file://$PROJECT_DIR$/springboot-dubbo-provider" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/springboot-rocketmq-consumer" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/springboot-rocketmq-producer" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../springbootrocketmqdubboorder" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../springbootrocketmqdubboorder/shop-api" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../springbootrocketmqdubboorder/shop-common" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../springbootrocketmqdubboorder/shop-coupon-service" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../springbootrocketmqdubboorder/shop-goods-service" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../springbootrocketmqdubboorder/shop-order-service" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../springbootrocketmqdubboorder/shop-order-web" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../springbootrocketmqdubboorder/shop-pay-service" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../springbootrocketmqdubboorder/shop-pay-web" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../springbootrocketmqdubboorder/shop-pojo" charset="UTF-8" />
     <file url="file://$USER_HOME$/Downloads/dubbo-admin-master/dubbo-admin" charset="UTF-8" />
   </component>
 </project>
